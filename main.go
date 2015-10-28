@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/url"
 	"net/http"
+	"strconv"
 	"io/ioutil"
 	"github.com/jeffail/gabs"
 	irc "github.com/fluffle/goirc/client"
@@ -33,7 +34,7 @@ func ProcessEvent(data *gabs.Container, event string) {
 		commits, _ := data.Search("commits").Children();
 		numc := len(commits);
 
-		message <- "[" + repo + "] " + user + " pushed " + string(numc) + " commits " + gitio;
+		message <- "[\x033" + repo + "\x03] \x0311" + user + "\x03 pushed \x037" + strconv.Itoa(numc) + "\x03 commits \x033" + gitio + "\x03";
 
 
 		for _, commit := range commits {
@@ -41,7 +42,7 @@ func ProcessEvent(data *gabs.Container, event string) {
 			msg := commit.Search("message").Data().(string);
 			user := commit.Search("author", "name").Data().(string);
 
-			message <- "[" + repo + "] " + user + " " + hash + " - " + msg;
+			message <- "[\x033" + repo + "\x03] \x0311" + user + "\x0312 "  + hash + "\x03 - " + msg;
 		}
 
 		//"\x03 ±"
