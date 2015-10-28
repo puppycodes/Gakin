@@ -168,14 +168,14 @@ func IRCConnection(host string, channel string) {
 
 	});
 	cli.HandleFunc(irc.CONNECTED, func(conn *irc.Conn, line *irc.Line) {
-		if line.Text()[0:1] == "^" {
-			ParseCommand(conn, line.Nick, line.Text());
-		}
+		fmt.Printf("[*] Joining %s\n", channel);
+		cli.Join(channel);
 	});
 
 	cli.HandleFunc(irc.PRIVMSG, func(conn *irc.Conn, line *irc.Line) {
-		fmt.Printf("[*] Joining %s\n", channel);
-		cli.Join(channel);
+		if line.Text()[0:1] == "^" {
+			ParseCommand(conn, line.Nick, line.Text());
+		}
 	})
 
 	fmt.Printf("[*] Connecting to %s\n", host);
