@@ -32,10 +32,9 @@ func ProcessEvent(data *gabs.Container, event string) {
 		user, _ := data.Search("pusher", "name").Data().(string);
 		gitio := GitioShort(data.Search("head_commit", "url").Data().(string));
 		commits, _ := data.Search("commits").Children();
+		numc := strconv.Itoa(data.CountElements("commits"));
 
-		numc := data.CountElements("commits");
-
-		message <- "[\x033" + repo + "\x03] \x0311" + user + "\x03 pushed \x037" + strconv.Itoa(numc) + "\x03 commits \x033" + gitio + "\x03";
+		message <- "[\x033" + repo + "\x03] \x0311" + user + "\x03 pushed \x037" + numc + "\x03 commits \x033" + gitio + "\x03";
 
 
 		for _, commit := range commits {
