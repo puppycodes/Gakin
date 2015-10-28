@@ -24,32 +24,61 @@ func GitioShort(_url string) (string) {
 	return resp.Header.Get("Location");
 }
 
+// TODO: Properly get commit count
+func PushEvent(data *gabs.Container) {
+	repo, _ := data.Search("repository", "full_name").Data().(string);
+	user, _ := data.Search("pusher", "name").Data().(string);
+	gitio := GitioShort(data.Search("head_commit", "url").Data().(string));
+	commits, _ := data.Search("commits").Children();
+
+	cobj, _ := data.Search("commits").ChildrenMap();
+
+	commitlen := strconv.Itoa(len(cobj));
+
+	message <- "[" + repo + "] " + user + " pushed " + commitlen + " commits " + gitio;
+
+
+	for _, commit := range commits {
+		hash := commit.Search("id").Data().(string)[0:6];
+		msg := commit.Search("message").Data().(string);
+		user := commit.Search("author", "name").Data().(string);
+
+		message <- "[" + repo + "] " + user + " "  + hash + " - " + msg;
+	}
+}
+
+func IssuesEvent(data *gabs.Container) {
+	action := data.Search("action").Data().(string);
+
+	repo, _ := data.Search("repository", "full_name").Data().(string);
+	user, _ := data.Search("issue", "user", "login").Data().(string);
+	title, _ := data.Searc("issue", "title").Data().(string);
+	inum, _ := data.Search("issue", "id").Data().(int);
+	numstr := strconv.Itoa(inum);
+
+	gitio := GitioShort(data.Search("issue", "html_url").Data().(string));
+
+	switch action {
+	case "opened":
+		message <- "[" + repo + "] " + user + " opened issue #" + numstr + "\"" + + "\"" + gitio;
+	case "closed":
+		message <- "[" + repo + "] " + user + " closed issue #" + numstr + "\"" + + "\"" + gitio;
+	case "reopened":
+		message <- "[" + repo + "] " + user + " reopened issue #" + numstr + "\"" + + "\"" + gitio;
+	case "assigned":
+		assignee,_ := data.Search("issue", "assignee", "login").Data().(string);
+		message <- "[" + repo + "] " + user + " assigned issue #" + numstr + "\"" + + "\" to " + assignee + " " + gitio;
+	default:
+		// Ignore it
+	}
+}
 
 func ProcessEvent(data *gabs.Container, event string) {
 	switch event {
 	case "push":
-		repo, _ := data.Search("repository", "full_name").Data().(string);
-		user, _ := data.Search("pusher", "name").Data().(string);
-		gitio := GitioShort(data.Search("head_commit", "url").Data().(string));
-		commits, _ := data.Search("commits").Children();
-
-		cobj, _ := data.Search("commits").ChildrenMap();
-
-		commitlen := strconv.Itoa(len(cobj));
-
-		message <- "[\x033" + repo + "\x03] \x0311" + user + "\x03 pushed " + commitlen + " commits" + gitio + "\x03";
-
-
-		for _, commit := range commits {
-			hash := commit.Search("id").Data().(string)[0:6];
-			msg := commit.Search("message").Data().(string);
-			user := commit.Search("author", "name").Data().(string);
-
-			message <- "[\x033" + repo + "\x03] \x0311" + user + "\x0312 "  + hash + "\x03 - " + msg;
-		}
-
-		//"\x03 ±"
-
+		PushEvent(data);
+	case "issues":
+		IssuesEvent(data);
 	default:
 		fmt.Printf("[*] HOOK %s\n", event);
 	}
@@ -74,10 +103,9 @@ func HandlePost(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-
 	http.HandleFunc("/", HandlePost);
-
 	go IRCConnection("chat.freenode.net", "##XAMPP");
+
 	http.ListenAndServe(":9987", nil);
 }
 
@@ -87,8 +115,10 @@ func IRCConnection(host string, channel string) {
 	IRCConnQuit := make(chan bool);
 	run := true;
 	cfg := irc.NewConfig("Gakin", "Gakin");
+
     cfg.Server = host;
     cfg.NewNick = func(n string) string { return n + "~" };
+
     cli := irc.Client(cfg);
 
     cli.EnableStateTracking();
@@ -112,8 +142,6 @@ func IRCConnection(host string, channel string) {
 	// Run Worker
 	for run {
 		cli.Privmsg(channel, <- message);
-
-
 	}
 
 	<- IRCConnQuit;
