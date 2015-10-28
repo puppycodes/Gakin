@@ -32,7 +32,8 @@ func ProcessEvent(data *gabs.Container, event string) {
 		user, _ := data.Search("pusher", "name").Data().(string);
 		gitio := GitioShort(data.Search("head_commit", "url").Data().(string));
 		commits, _ := data.Search("commits").Children();
-		numc := len(commits);
+
+		numc := data.CountElements("commits");
 
 		message <- "[\x033" + repo + "\x03] \x0311" + user + "\x03 pushed \x037" + strconv.Itoa(numc) + "\x03 commits \x033" + gitio + "\x03";
 
@@ -96,16 +97,6 @@ func IRCConnection(host string, channel string) {
 		run = false;
 
 	});
-	cli.HandleFunc(irc.PRIVMSG, func(conn *irc.Conn, line *irc.Line) {
-		fmt.Printf("[*] %s\n", line.Text());
-	});
-	cli.HandleFunc(irc.NOTICE, func(conn *irc.Conn, line *irc.Line) {
-		fmt.Printf("[*] %s\n", line.Text());
-	});
-	cli.HandleFunc(irc.TOPIC, func(conn *irc.Conn, line *irc.Line) {
-		fmt.Printf("[*] %s\n", line.Text());
-	});
-
 	cli.HandleFunc(irc.CONNECTED, func(conn *irc.Conn, line *irc.Line) {
 		fmt.Printf("[*] Joining %s\n", channel);
 		cli.Join(channel);
