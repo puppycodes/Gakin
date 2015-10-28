@@ -26,11 +26,25 @@ func GitioShort(_url string) (string) {
 
 func ProcessEvent(data *gabs.Container, event string) {
 	switch event {
-	case "issue":
-
 	case "push":
+		repo, _ := data.Search("repository", "full_name").Data().(string);
+		user, _ := data.Search("pusher", "name").Data().(string);
+		gitio := GitioShort(data.Search("head_commit", "url").Data().(string));
+		commits, _ := data.Search("commits").Children();
+		numc := len(commits);
 
-	case "pull_request":
+		message <- "[" + repo + "] " + user + " pushed " + string(numc) + " commits " + gitio;
+
+
+		for _, commit := range commits {
+			hash := commit.Search("id").Data().(string)[0:6];
+			msg := commit.Search("message").Data().(string);
+			user := commit.Search("author", "name").Data().(string);
+
+			message <- "[" + repo + "] " + user + " " + hash + " - " + msg;
+		}
+
+		//"\x03 ±"
 
 	default:
 		fmt.Printf("[*] HOOK %s\n", event);
@@ -103,8 +117,8 @@ func IRCConnection(host string, channel string) {
 
 	// Run Worker
 	for run {
-		strmsg := <- message;
-		fmt.Printf("[!] %s\n", strmsg);
+		cli.Privmsg(channel, <- message);
+
 
 	}
 
