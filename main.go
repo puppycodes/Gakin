@@ -168,6 +168,17 @@ func main() {
 	http.ListenAndServe(endpoint, nil);
 }
 
+func Roll(count, sides string) (int) {
+	_count,_ := strconv.Atoi(count);
+	_sides,_ := strconv.Atoi(count);
+
+	total := 0;
+	for i := 0; i < _count; i++ {
+		total += rand.Intn(_sides);
+	}
+	return total;
+}
+
 func ParseCommand(conn *irc.Conn, nick, line string) {
 	// Slice off the '^' and split it up
 	args := strings.Split((line[1:]), " ");
@@ -179,14 +190,7 @@ func ParseCommand(conn *irc.Conn, nick, line string) {
 				message <- "usage: roll <num> <sides>";
 				break;
 			}
-			count,_ := strconv.Atoi(args[1]);
-			sides,_ := strconv.Atoi(args[2]);
-
-			total := 0;
-			for i := 0; i < count; i++ {
-				total += rand.Intn(sides);
-			}
-			message <- nick + ", " + strconv.Itoa(total);
+			message <- nick + ", " + strconv.Itoa(Roll(args[1], args[2]));
 		default:
 			message <- "Unknown Command '" + args[0] + "'";
 	}
