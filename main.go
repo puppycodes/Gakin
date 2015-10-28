@@ -53,7 +53,7 @@ func IssuesEvent(data *gabs.Container) {
 	repo, _ := data.Search("repository", "full_name").Data().(string);
 	user, _ := data.Search("issue", "user", "login").Data().(string);
 	title, _ := data.Search("issue", "title").Data().(string);
-	inum, _ := data.Search("issue", "id").Data().(int32);
+	inum, _ := data.Search("issue", "id").Data().(int);
 	fmt.Printf("[!] Issue # %d\n", inum);
 	numstr := strconv.Itoa(inum);
 
