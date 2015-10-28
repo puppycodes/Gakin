@@ -76,10 +76,27 @@ func IssuesEvent(data *gabs.Container) {
 func PullRequestEvent(data *gabs.Container) {
 	action := data.Search("action").Data().(string);
 
-	switch action {
+	repo, _ := data.Search("repository", "full_name").Data().(string);
+	user, _ := data.Search("pull_request", "user", "login").Data().(string);
+	title, _ := data.Search("pull_request", "title").Data().(string);
+	inum, _ := data.Search("pull_request", "number").Data().(string);
 
-	default:
-		// Ignore it
+	gitio := GitioShort(data.Search("pull_request", "html_url").Data().(string));
+
+	switch action {
+		case "opened":
+			message <- "[" + repo + "] " + user + " opened pull request #" + inum + " \"" + title + "\" " + gitio;
+		case "closed":
+			if data.Search("pull_request", "merged").Data().(bool) {
+				message <- "[" + repo + "] " + user + " merged pull request #" + inum + " \"" + title + "\" " + gitio;
+			} else {
+				message <- "[" + repo + "] " + user + " closed pull request #" + inum + " \"" + title + "\" " + gitio;
+			}
+		case "assigned":
+			assignee,_ := data.Search("pull_request", "assignee", "login").Data().(string);
+			message <- "[" + repo + "] " + user + " assigned pull request #" + inum + " \"" + title + "\" to " + assignee + " " + gitio;
+		default:
+			// Ignore it
 	}
 }
 
