@@ -53,22 +53,20 @@ func IssuesEvent(data *gabs.Container) {
 	repo, _ := data.Search("repository", "full_name").Data().(string);
 	user, _ := data.Search("issue", "user", "login").Data().(string);
 	title, _ := data.Search("issue", "title").Data().(string);
-	inum, _ := data.Search("issue", "id").Data().(int);
-	fmt.Printf("[!] Issue # %d\n", inum);
-	numstr := strconv.Itoa(inum);
+	inum, _ := data.Search("issue", "id").Data().(string);
 
 	gitio := GitioShort(data.Search("issue", "html_url").Data().(string));
 
 	switch action {
 	case "opened":
-		message <- "[" + repo + "] " + user + " opened issue #" + numstr + " \"" + title + "\" " + gitio;
+		message <- "[" + repo + "] " + user + " opened issue #" + inum + " \"" + title + "\" " + gitio;
 	case "closed":
-		message <- "[" + repo + "] " + user + " closed issue #" + numstr + " \"" + title + "\" " + gitio;
+		message <- "[" + repo + "] " + user + " closed issue #" + inum + " \"" + title + "\" " + gitio;
 	case "reopened":
-		message <- "[" + repo + "] " + user + " reopened issue #" + numstr + " \"" + title + "\" " + gitio;
+		message <- "[" + repo + "] " + user + " reopened issue #" + inum + " \"" + title + "\" " + gitio;
 	case "assigned":
 		assignee,_ := data.Search("issue", "assignee", "login").Data().(string);
-		message <- "[" + repo + "] " + user + " assigned issue #" + numstr + " \"" + title + "\" to " + assignee + " " + gitio;
+		message <- "[" + repo + "] " + user + " assigned issue #" + inum + " \"" + title + "\" to " + assignee + " " + gitio;
 	default:
 		// Ignore it
 	}
