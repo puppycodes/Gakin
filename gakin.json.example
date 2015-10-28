@@ -1,0 +1,10 @@
+{
+	"endpoint":":1234",
+	"irc": [
+		{
+			"nickname":"ExampleGakin",
+			"server":"irc.freenode.net",
+			"channel":"##example"
+		}
+	]
+}

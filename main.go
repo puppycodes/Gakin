@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"io/ioutil"
+	"os"
 	"github.com/jeffail/gabs"
 	irc "github.com/fluffle/goirc/client"
 )
@@ -131,11 +132,39 @@ func HandlePost(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func main() {
-	http.HandleFunc("/", HandlePost);
-	go IRCConnection("chat.freenode.net", "##XAMPP");
 
-	http.ListenAndServe(":9987", nil);
+
+func main() {
+	// Load config
+	file, err := os.Open("gakin.json");
+	if err != nil {
+		fmt.Printf("[*] Unable to load config: %s\n", err.Error());
+	}
+
+	cfg, err := ioutil.ReadAll(file);
+	if err != nil {
+		fmt.Printf("[*] Configure error: %s\n", err.Error());
+	}
+	r, err := gabs.ParseJSON(cfg);
+	if err != nil {
+		fmt.Printf("[*] Configure error: %s\n", err.Error());
+	}
+
+	irchndl, _ := r.Search("irc").Children();
+	for _, icon := range irchndl {
+		server,_ := icon.Search("server").Data().(string);
+		channel,_ := icon.Search("channel").Data().(string);
+		nickname,_ := icon.Search("nickname").Data().(string);
+
+		go IRCConnection(server, channel, nickname);
+	}
+
+	http.HandleFunc("/", HandlePost);
+
+	endpoint,_ := r.Search("endpoint").Data().(string);
+
+
+	http.ListenAndServe(endpoint, nil);
 }
 
 func ParseCommand(conn *irc.Conn, nick, line string) {
@@ -149,10 +178,10 @@ func ParseCommand(conn *irc.Conn, nick, line string) {
 	}
 }
 
-func IRCConnection(host string, channel string) {
+func IRCConnection(host, channel, nick string) {
 	IRCConnQuit := make(chan bool);
 	run := true;
-	cfg := irc.NewConfig("Gakin", "Gakin");
+	cfg := irc.NewConfig(nick, nick);
 
     cfg.Server = host;
     cfg.NewNick = func(n string) string { return n + "~" };
