@@ -32,7 +32,7 @@ func PushEvent(data *gabs.Container) {
 	commits, _ := data.Search("commits").Children();
 
 	cobj, _ := data.Search("commits").ChildrenMap();
-	fmt.Printf("[!] Commit # %d\n" len(cobj));
+	fmt.Printf("[!] Commit # %d\n", len(cobj));
 	commitlen := strconv.Itoa(len(cobj));
 
 	message <- "[" + repo + "] " + user + " pushed " + commitlen + " commits " + gitio;
@@ -54,7 +54,7 @@ func IssuesEvent(data *gabs.Container) {
 	user, _ := data.Search("issue", "user", "login").Data().(string);
 	title, _ := data.Search("issue", "title").Data().(string);
 	inum, _ := data.Search("issue", "id").Data().(int32);
-	fmt.Printf("[!] Issue # %d\n" inum);
+	fmt.Printf("[!] Issue # %d\n", inum);
 	numstr := strconv.Itoa(inum);
 
 	gitio := GitioShort(data.Search("issue", "html_url").Data().(string));
