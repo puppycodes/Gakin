@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"net/http"
 	"strconv"
+	"strings"
 	"io/ioutil"
 	"github.com/jeffail/gabs"
 	irc "github.com/fluffle/goirc/client"
@@ -58,15 +59,25 @@ func IssuesEvent(data *gabs.Container) {
 	gitio := GitioShort(data.Search("issue", "html_url").Data().(string));
 
 	switch action {
-	case "opened":
-		message <- "[" + repo + "] " + user + " opened issue #" + inum + " \"" + title + "\" " + gitio;
-	case "closed":
-		message <- "[" + repo + "] " + user + " closed issue #" + inum + " \"" + title + "\" " + gitio;
-	case "reopened":
-		message <- "[" + repo + "] " + user + " reopened issue #" + inum + " \"" + title + "\" " + gitio;
-	case "assigned":
-		assignee,_ := data.Search("issue", "assignee", "login").Data().(string);
-		message <- "[" + repo + "] " + user + " assigned issue #" + inum + " \"" + title + "\" to " + assignee + " " + gitio;
+		case "opened":
+			message <- "[" + repo + "] " + user + " opened issue #" + inum + " \"" + title + "\" " + gitio;
+		case "closed":
+			message <- "[" + repo + "] " + user + " closed issue #" + inum + " \"" + title + "\" " + gitio;
+		case "reopened":
+			message <- "[" + repo + "] " + user + " reopened issue #" + inum + " \"" + title + "\" " + gitio;
+		case "assigned":
+			assignee,_ := data.Search("issue", "assignee", "login").Data().(string);
+			message <- "[" + repo + "] " + user + " assigned issue #" + inum + " \"" + title + "\" to " + assignee + " " + gitio;
+		default:
+			// Ignore it
+	}
+}
+
+func PullRequestEvent(data *gabs.Container) {
+	action := data.Search("action").Data().(string);
+
+	switch action {
+
 	default:
 		// Ignore it
 	}
@@ -74,30 +85,32 @@ func IssuesEvent(data *gabs.Container) {
 
 func ProcessEvent(data *gabs.Container, event string) {
 	switch event {
-	case "push":
-		PushEvent(data);
-	case "issues":
-		IssuesEvent(data);
-	default:
-		fmt.Printf("[*] HOOK %s\n", event);
+		case "push":
+			PushEvent(data);
+		case "issues":
+			IssuesEvent(data);
+		case "pull_request":
+			PullRequestEvent(data);
+		default:
+			fmt.Printf("[*] HOOK %s\n", event);
 	}
 }
 
 func HandlePost(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
-	case "POST":
-		body, err := ioutil.ReadAll(req.Body);
-		if err != nil {
-			fmt.Printf("[*] HandlePost error: %s\n", err.Error());
-		}
-		r, err := gabs.ParseJSON(body);
-		if err != nil {
-			fmt.Printf("[*] HandlePost error: %s\n", err.Error());
-		}
-		ProcessEvent(r, req.Header.Get("X-Github-Event"));
-	default:
-		w.Header().Set("Content-Type", "text/html");
-		fmt.Fprintf(w, "<center><h1>Shhhhhhhhhhhhhhh</h1><br /><object width='800' height='600' data='http://archive.bad-alloc.net/other/flash/garrett.swf'></object></center>");
+		case "POST":
+			body, err := ioutil.ReadAll(req.Body);
+			if err != nil {
+				fmt.Printf("[*] HandlePost error: %s\n", err.Error());
+			}
+			r, err := gabs.ParseJSON(body);
+			if err != nil {
+				fmt.Printf("[*] HandlePost error: %s\n", err.Error());
+			}
+			ProcessEvent(r, req.Header.Get("X-Github-Event"));
+		default:
+			w.Header().Set("Content-Type", "text/html");
+			fmt.Fprintf(w, "<center><h1>Shhhhhhhhhhhhhhh</h1><br /><object width='800' height='600' data='http://archive.bad-alloc.net/other/flash/garrett.swf'></object></center>");
 	}
 }
 
@@ -108,7 +121,16 @@ func main() {
 	http.ListenAndServe(":9987", nil);
 }
 
-
+func ParseCommand(conn *irc.Conn, nick, line string) {
+	// Slice off the '^' and split it up
+	args := strings.Split((line[1:]), " ");
+	switch args[0] {
+		case "ping":
+			message <- nick + ", pong~";
+		default:
+			message <- "Unknown Command '" + args[0] + "'";
+	}
+}
 
 func IRCConnection(host string, channel string) {
 	IRCConnQuit := make(chan bool);
@@ -129,6 +151,12 @@ func IRCConnection(host string, channel string) {
 
 	});
 	cli.HandleFunc(irc.CONNECTED, func(conn *irc.Conn, line *irc.Line) {
+		if line.Text()[0:1] == "^" {
+			ParseCommand(conn, line.Nick, line.Text());
+		}
+	});
+
+	cli.HandleFunc(irc.PRIVMSG, func(conn *irc.Conn, line *irc.Line) {
 		fmt.Printf("[*] Joining %s\n", channel);
 		cli.Join(channel);
 	})
