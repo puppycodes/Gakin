@@ -4,13 +4,14 @@
 package main
 
 import (
+	"os"
 	"fmt"
 	"net/url"
-	"net/http"
 	"strconv"
 	"strings"
+	"net/http"
 	"io/ioutil"
-	"os"
+	"math/rand"
 	"github.com/jeffail/gabs"
 	irc "github.com/fluffle/goirc/client"
 )
@@ -173,6 +174,19 @@ func ParseCommand(conn *irc.Conn, nick, line string) {
 	switch args[0] {
 		case "ping":
 			message <- nick + ", pong~";
+		case "roll":
+			if len(args) != 3 {
+				message <- "usage: roll <num> <sides>";
+				break;
+			}
+			count,_ := strconv.Atoi(args[1]);
+			sides,_ := strconv.Atoi(args[2]);
+
+			total := 0;
+			for i := 0; i < count; i++ {
+				total += rand.Intn(sides);
+			}
+			message <- nick + ", " + strconv.Itoa(total);
 		default:
 			message <- "Unknown Command '" + args[0] + "'";
 	}
