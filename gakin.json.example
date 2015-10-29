@@ -6,5 +6,9 @@
 			"server":"irc.freenode.net",
 			"channel":"##example"
 		}
+	],
+	"rss": [
+		"",
+		""
 	]
 }
