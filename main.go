@@ -182,7 +182,8 @@ func Roll(count, sides string) (int) {
 func ParseCommand(conn *irc.Conn, nick, line string) {
 	// Slice off the '^' and split it up
 	args := strings.Split((line[1:]), " ");
-	switch args[0] {
+	if args[0] != "" && args[0] != "^" {
+		switch args[0] {
 		case "ping":
 			message <- nick + ", pong~";
 		case "roll":
@@ -193,6 +194,7 @@ func ParseCommand(conn *irc.Conn, nick, line string) {
 			message <- nick + ", " + strconv.Itoa(Roll(args[1], args[2]));
 		default:
 			message <- "Unknown Command '" + args[0] + "'";
+		}
 	}
 }
 
@@ -223,7 +225,7 @@ func IRCConnection(host, channel, nick string) {
 		if line.Text()[0:1] == "^" {
 			ParseCommand(conn, line.Nick, line.Text());
 		}
-	})
+	});
 
 	fmt.Printf("[*] Connecting to %s\n", host);
 	if err := cli.Connect(); err != nil {
