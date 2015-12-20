@@ -179,6 +179,28 @@ func Roll(count, sides string) (int) {
 	return total;
 }
 
+func hblookup(title string) (string) {
+	resp, err := http.Get("http://hummingbird.me/api/v1/search/anime?query="+title);
+	if err != nil {
+		return "Request Error";
+	}
+	defer resp.Body.Close();
+	res, err := gabs.ParseJSON(ioutil.ReadAll(resp.Body));
+	if err != nil {
+		return "Request Error";
+	}
+	re = res.Children();
+	string msg;
+	for _, child := range re {
+		msg +=  child.S("title").Data() + " Status: " + child.S("status").Data() + " Eps:" + child.S("episode_count").Data() + " Started: " + child.S("started_airing").Data() + " Ended: " + child.S("finished_airing").Data() + "\n";
+	}
+	return msg;
+}
+
+func hbuser(user string) (string) {
+
+}
+
 func ParseCommand(conn *irc.Conn, nick, line string) {
 	// Slice off the '^' and split it up
 	args := strings.Split((line[1:]), " ");
@@ -192,6 +214,17 @@ func ParseCommand(conn *irc.Conn, nick, line string) {
 				break;
 			}
 			message <- nick + ", " + strconv.Itoa(Roll(args[1], args[2]));
+		case "hb":
+			if len(args) != 3 {
+				message <- "usage: hb <lookup|user> <title|username>";
+			}
+			if args[1] == "lookup" {
+				message <- hblookup(args[2]);
+			} else if args[1] == "user" {
+				message <-hbuser(args[2]);
+			} else {
+				message <- "Unknown method " + args[1];
+			}
 		default:
 			message <- "Unknown Command '" + args[0] + "'";
 		}
