@@ -179,26 +179,59 @@ func Roll(count, sides string) (int) {
 	return total;
 }
 
-func hblookup(title string) (string) {
+func hblookup(title string) {
 	resp, err := http.Get("http://hummingbird.me/api/v1/search/anime?query="+title);
 	if err != nil {
-		return "Request Error";
+		message <- "Request Error";
 	}
 	defer resp.Body.Close();
-	res, err := gabs.ParseJSON(ioutil.ReadAll(resp.Body));
+	res, err := ioutil.ReadAll(resp.Body);
 	if err != nil {
-		return "Request Error";
+		message <- "Request Error";
 	}
-	re = res.Children();
-	string msg;
-	for _, child := range re {
-		msg +=  child.S("title").Data() + " Status: " + child.S("status").Data() + " Eps:" + child.S("episode_count").Data() + " Started: " + child.S("started_airing").Data() + " Ended: " + child.S("finished_airing").Data() + "\n";
+	jsn, _ := gabs.ParseJSON(res);
+	ani, _ := jsn.Children();
+	cnt := 1;
+	for _, child := range ani {
+		title :=  child.S("title").Data();
+		if title == nil {
+			title = "?";
+		}
+		status := child.S("status").Data();
+		if status == nil {
+			status = "?";
+		}
+		epcount := child.S("episode_count").Data();
+		if epcount == nil {
+			epcount = "?";
+		}
+		start := child.S("started_airing").Data();
+		if start == nil {
+			start = "?";
+		}
+		end := child.S("finished_airing").Data();
+		if end == nil {
+			end = "?";
+		}
+		message <- strconv.Itoa(cnt) + ") Title: " + title.(string) + " Status: " + status.(string) + " Episodes: " + strconv.FormatFloat(epcount.(float64),'f',0,64) + " Started: " + start.(string)  + " Ended: " + end.(string) + "\n";
+		if cnt == 5 {
+			break;
+		}
+		cnt += 1;
 	}
-	return msg;
 }
 
-func hbuser(user string) (string) {
-
+func hbuser(user string) {
+	resp, err := http.Get("http://hummingbird.me/api/v1/users/"+user);
+	if err != nil {
+		message <- "Request Error";
+	}
+	defer resp.Body.Close();
+	res, err := ioutil.ReadAll(resp.Body);
+	if err != nil {
+		message <- "Request Error";
+	}
+	jsn, _ := gabs.ParseJSON(res);
 }
 
 func ParseCommand(conn *irc.Conn, nick, line string) {
@@ -219,9 +252,9 @@ func ParseCommand(conn *irc.Conn, nick, line string) {
 				message <- "usage: hb <lookup|user> <title|username>";
 			}
 			if args[1] == "lookup" {
-				message <- hblookup(args[2]);
+				hblookup(args[2]);
 			} else if args[1] == "user" {
-				message <-hbuser(args[2]);
+				hbuser(args[2]);
 			} else {
 				message <- "Unknown method " + args[1];
 			}
