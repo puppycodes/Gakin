@@ -29,12 +29,12 @@ func GitioShort(_url string) (string) {
 
 // TODO: Properly get commit count
 func PushEvent(data *gabs.Container) {
-	repo, _ := data.Search("repository", "full_name").Data().(string);
-	user, _ := data.Search("pusher", "name").Data().(string);
-	gitio := GitioShort(data.Search("head_commit", "url").Data().(string));
-	commits, _ := data.Search("commits").Children();
+	repo, _ := data.S("repository", "full_name").Data().(string);
+	user, _ := data.S("pusher", "name").Data().(string);
+	gitio := GitioShort(data.S("head_commit", "url").Data().(string));
+	commits, _ := data.S("commits").Children();
 
-	cobj, _ := data.Search("commits").ChildrenMap();
+	cobj, _ := data.S("commits").ChildrenMap();
 	fmt.Printf("[!] Commit # %d\n", len(cobj));
 	commitlen := strconv.Itoa(len(cobj));
 
@@ -42,23 +42,23 @@ func PushEvent(data *gabs.Container) {
 
 
 	for _, commit := range commits {
-		hash := commit.Search("id").Data().(string)[0:6];
-		msg := commit.Search("message").Data().(string);
-		user := commit.Search("author", "name").Data().(string);
+		hash := commit.S("id").Data().(string)[0:6];
+		msg := commit.S("message").Data().(string);
+		user := commit.S("author", "name").Data().(string);
 
 		message <- "[" + repo + "] " + user + " "  + hash + " - " + msg;
 	}
 }
 
 func IssuesEvent(data *gabs.Container) {
-	action := data.Search("action").Data().(string);
+	action := data.S("action").Data().(string);
 
-	repo, _ := data.Search("repository", "full_name").Data().(string);
-	user, _ := data.Search("issue", "user", "login").Data().(string);
-	title, _ := data.Search("issue", "title").Data().(string);
-	inum, _ := data.Search("issue", "id").Data().(string);
+	repo, _ := data.S("repository", "full_name").Data().(string);
+	user, _ := data.S("issue", "user", "login").Data().(string);
+	title, _ := data.S("issue", "title").Data().(string);
+	inum, _ := data.S("issue", "id").Data().(string);
 
-	gitio := GitioShort(data.Search("issue", "html_url").Data().(string));
+	gitio := GitioShort(data.S("issue", "html_url").Data().(string));
 
 	switch action {
 		case "opened":
@@ -68,7 +68,7 @@ func IssuesEvent(data *gabs.Container) {
 		case "reopened":
 			message <- "[" + repo + "] " + user + " reopened issue #" + inum + " \"" + title + "\" " + gitio;
 		case "assigned":
-			assignee,_ := data.Search("issue", "assignee", "login").Data().(string);
+			assignee,_ := data.S("issue", "assignee", "login").Data().(string);
 			message <- "[" + repo + "] " + user + " assigned issue #" + inum + " \"" + title + "\" to " + assignee + " " + gitio;
 		default:
 			// Ignore it
@@ -76,26 +76,26 @@ func IssuesEvent(data *gabs.Container) {
 }
 
 func PullRequestEvent(data *gabs.Container) {
-	action := data.Search("action").Data().(string);
+	action := data.S("action").Data().(string);
 
-	repo, _ := data.Search("repository", "full_name").Data().(string);
-	user, _ := data.Search("pull_request", "user", "login").Data().(string);
-	title, _ := data.Search("pull_request", "title").Data().(string);
-	inum, _ := data.Search("pull_request", "number").Data().(string);
+	repo, _ := data.S("repository", "full_name").Data().(string);
+	user, _ := data.S("pull_request", "user", "login").Data().(string);
+	title, _ := data.S("pull_request", "title").Data().(string);
+	inum, _ := data.S("pull_request", "number").Data().(string);
 
-	gitio := GitioShort(data.Search("pull_request", "html_url").Data().(string));
+	gitio := GitioShort(data.S("pull_request", "html_url").Data().(string));
 
 	switch action {
 		case "opened":
 			message <- "[" + repo + "] " + user + " opened pull request #" + inum + " \"" + title + "\" " + gitio;
 		case "closed":
-			if data.Search("pull_request", "merged").Data().(bool) {
+			if data.S("pull_request", "merged").Data().(bool) {
 				message <- "[" + repo + "] " + user + " merged pull request #" + inum + " \"" + title + "\" " + gitio;
 			} else {
 				message <- "[" + repo + "] " + user + " closed pull request #" + inum + " \"" + title + "\" " + gitio;
 			}
 		case "assigned":
-			assignee,_ := data.Search("pull_request", "assignee", "login").Data().(string);
+			assignee,_ := data.S("pull_request", "assignee", "login").Data().(string);
 			message <- "[" + repo + "] " + user + " assigned pull request #" + inum + " \"" + title + "\" to " + assignee + " " + gitio;
 		default:
 			// Ignore it
@@ -151,18 +151,18 @@ func main() {
 		fmt.Printf("[*] Configure error: %s\n", err.Error());
 	}
 
-	irchndl, _ := r.Search("irc").Children();
+	irchndl, _ := r.S("irc").Children();
 	for _, icon := range irchndl {
-		server,_ := icon.Search("server").Data().(string);
-		channel,_ := icon.Search("channel").Data().(string);
-		nickname,_ := icon.Search("nickname").Data().(string);
+		server,_ := icon.S("server").Data().(string);
+		channel,_ := icon.S("channel").Data().(string);
+		nickname,_ := icon.S("nickname").Data().(string);
 
 		go IRCConnection(server, channel, nickname);
 	}
 
 	http.HandleFunc("/", HandlePost);
 
-	endpoint,_ := r.Search("endpoint").Data().(string);
+	endpoint,_ := r.S("endpoint").Data().(string);
 
 
 	http.ListenAndServe(endpoint, nil);
@@ -213,7 +213,13 @@ func hblookup(title string) {
 		if end == nil {
 			end = "?";
 		}
-		message <- strconv.Itoa(cnt) + ") Title: " + title.(string) + " Status: " + status.(string) + " Episodes: " + strconv.FormatFloat(epcount.(float64),'f',0,64) + " Started: " + start.(string)  + " Ended: " + end.(string) + "\n";
+		slug := child.S("slug").Data();
+		if slug == nil {
+			slug = "";
+		} else {
+			slug = "https://hummingbird.me/anime/" + slug.(string);
+		}
+		message <- strconv.Itoa(cnt) + ") Title: " + title.(string) + " Status: " + status.(string) + " Episodes: " + strconv.FormatFloat(epcount.(float64),'f',0,64) + " Started: " + start.(string)  + " Ended: " + end.(string) + " | " + slug + "\n";
 		if cnt == 5 {
 			break;
 		}
