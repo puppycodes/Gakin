@@ -222,18 +222,32 @@ func hblookup(title string) {
 	}
 }
 
-// func hbuser(user string) {
-// 	resp, err := http.Get("http://hummingbird.me/api/v1/users/"+user);
-// 	if err != nil {
-// 		message <- "Request Error";
-// 	}
-// 	defer resp.Body.Close();
-// 	res, err := ioutil.ReadAll(resp.Body);
-// 	if err != nil {
-// 		message <- "Request Error";
-// 	}
-// 	jsn, _ := gabs.ParseJSON(res);
-// }
+func hbuser(user string) {
+	resp, err := http.Get("http://hummingbird.me/api/v1/users/"+user);
+	if err != nil {
+		message <- "Request Error";
+	}
+	defer resp.Body.Close();
+	res, err := ioutil.ReadAll(resp.Body);
+	if err != nil {
+		message <- "Request Error";
+	}
+	jsn, _ := gabs.ParseJSON(res);
+	name := jsn.S("name").Data();
+	if name == nil {
+		name = "?";
+	}
+	life := jsn.S("life_spent_on_anime").Data();
+	if life == nil {
+		life = "0";
+	}
+	last := jsn.S("last_library_update").Data();
+	if last == nil {
+		last = "?";
+	}
+
+	message <- name.(string) +": Time spent watching anime: " + strconv.FormatFloat(life.(float64) / 60 / 24 / 30,'f',2,64) + " months. Last Update: " + last.(string);
+}
 
 func ParseCommand(conn *irc.Conn, nick, line string) {
 	// Slice off the '^' and split it up
@@ -255,7 +269,7 @@ func ParseCommand(conn *irc.Conn, nick, line string) {
 			if args[1] == "lookup" {
 				hblookup(args[2]);
 			} else if args[1] == "user" {
-				// hbuser(args[2]);
+				hbuser(args[2]);
 			} else {
 				message <- "Unknown method " + args[1];
 			}
@@ -270,12 +284,12 @@ func IRCConnection(host, channel, nick string) {
 	run := true;
 	cfg := irc.NewConfig(nick, nick);
 
-    cfg.Server = host;
-    cfg.NewNick = func(n string) string { return n + "~" };
+	cfg.Server = host;
+	cfg.NewNick = func(n string) string { return n + "~" };
 
-    cli := irc.Client(cfg);
+	cli := irc.Client(cfg);
 
-    cli.EnableStateTracking();
+	cli.EnableStateTracking();
 
 	cli.HandleFunc(irc.DISCONNECTED, func(conn *irc.Conn, line *irc.Line) {
 		fmt.Printf("[*] Connect Done\n");
