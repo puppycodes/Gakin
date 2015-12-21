@@ -221,18 +221,18 @@ func hblookup(title string) {
 	}
 }
 
-func hbuser(user string) {
-	resp, err := http.Get("http://hummingbird.me/api/v1/users/"+user);
-	if err != nil {
-		message <- "Request Error";
-	}
-	defer resp.Body.Close();
-	res, err := ioutil.ReadAll(resp.Body);
-	if err != nil {
-		message <- "Request Error";
-	}
-	jsn, _ := gabs.ParseJSON(res);
-}
+// func hbuser(user string) {
+// 	resp, err := http.Get("http://hummingbird.me/api/v1/users/"+user);
+// 	if err != nil {
+// 		message <- "Request Error";
+// 	}
+// 	defer resp.Body.Close();
+// 	res, err := ioutil.ReadAll(resp.Body);
+// 	if err != nil {
+// 		message <- "Request Error";
+// 	}
+// 	jsn, _ := gabs.ParseJSON(res);
+// }
 
 func ParseCommand(conn *irc.Conn, nick, line string) {
 	// Slice off the '^' and split it up
@@ -254,7 +254,7 @@ func ParseCommand(conn *irc.Conn, nick, line string) {
 			if args[1] == "lookup" {
 				hblookup(args[2]);
 			} else if args[1] == "user" {
-				hbuser(args[2]);
+				// hbuser(args[2]);
 			} else {
 				message <- "Unknown method " + args[1];
 			}
