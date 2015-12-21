@@ -213,12 +213,7 @@ func hblookup(title string) {
 		if end == nil {
 			end = "?";
 		}
-		slug := child.S("slug").Data();
-		if slug == nil {
-			slug = "";
-		} else {
-			slug = "https://hummingbird.me/anime/" + slug.(string);
-		}
+		slug := "https://hummingbird.me/anime/" + child.S("slug").Data().(string);
 		message <- strconv.Itoa(cnt) + ") Title: " + title.(string) + " Status: " + status.(string) + " Episodes: " + strconv.FormatFloat(epcount.(float64),'f',0,64) + " Started: " + start.(string)  + " Ended: " + end.(string) + " | " + slug + "\n";
 		if cnt == 5 {
 			break;
