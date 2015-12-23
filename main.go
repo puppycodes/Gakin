@@ -258,6 +258,55 @@ func sauce(imgurl string) {
 		message <- "Request Error";
 	}
 	defer resp.Body.Close();
+	res, err := ioutil.ReadAll(resp.Body);
+	if err != nil {
+		message <- "Request Error";
+	}
+	jsn, _ := gabs.ParseJSON(res);
+	results,_ := jsn.S("results").Children();
+	cnt := 1;
+	for _, child := range results {
+		header := child.S("header");
+		data := child.S("header");
+
+		sim := header.S("similarity").Data();
+		if sim == nil {
+			sim = "?";
+		}
+		index_num := header.S("index_id").Data().(float64);
+		index_name := header.S("index_name").Data();
+		if index_name == nil {
+			index_name = "?";
+		}
+
+		// src_pxurl := "http://www.pixiv.net/member_illust.php?mode=medium\u0026illust_id=";
+
+		source := "";
+		artist := "?";
+		title := "?";
+
+		if index_num == 9 {
+			src := data.S("source").Data();
+			if src != nil {
+				source = src.(string);
+			}
+			artists,_ := data.S("creator").Children();
+			artist = artists.Data().(string);
+		}
+
+		// if index_num == 5 {
+		// 	source = src_pxurl + strconv.FormatFloat(data.S("pixiv_id").(float64), 'f', 0, 64);
+		// 	title = data.S("title").Data().(string);
+		// 	artist = data.S("member_name").Data().(string);
+		// }
+
+		message <- "[" + sim.(string) + "% Match] Index: " + index_name.(string) + " Title: " + title + " Artists: " + artist + " Src:" + source;
+
+		if cnt == 2 {
+			break;
+		}
+		cnt += 1;
+	}
 }
 
 func ParseCommand(conn *irc.Conn, nick, line string) {
@@ -291,7 +340,7 @@ func ParseCommand(conn *irc.Conn, nick, line string) {
 				sauce(args[1]);
 			}
 		default:
-			message <- "Unknown Command '" + args[0] + "'";
+			// Too whack to handle
 		}
 	}
 }
