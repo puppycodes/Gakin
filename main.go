@@ -17,6 +17,8 @@ import (
 )
 
 var message = make(chan string);
+var sauce_key = "";
+
 
 func GitioShort(_url string) (string) {
 	resp, err  := http.PostForm("http://git.io", url.Values{"url": {_url}});
@@ -150,6 +152,7 @@ func main() {
 	if err != nil {
 		fmt.Printf("[*] Configure error: %s\n", err.Error());
 	}
+	sauce_key = r.S("sauce_key").Data().(string);
 
 	irchndl, _ := r.S("irc").Children();
 	for _, icon := range irchndl {
@@ -249,6 +252,14 @@ func hbuser(user string) {
 	message <- name.(string) +": Time spent watching anime: " + strconv.FormatFloat(life.(float64) / 60 / 24 / 30,'f',2,64) + " months. Last Update: " + last.(string);
 }
 
+func sauce(imgurl string) {
+	resp, err := http.Get("https://saucenao.com/search.php?db=999&output_type=2&testmode=1&numres=16&url="+imgurl+"&api_key="+sauce_key);
+	if err != nil {
+		message <- "Request Error";
+	}
+	defer resp.Body.Close();
+}
+
 func ParseCommand(conn *irc.Conn, nick, line string) {
 	// Slice off the '^' and split it up
 	args := strings.Split((line[1:]), " ");
@@ -272,6 +283,12 @@ func ParseCommand(conn *irc.Conn, nick, line string) {
 				hbuser(args[2]);
 			} else {
 				message <- "Unknown method " + args[1];
+			}
+		case "sauce":
+			if len(args) != 2 {
+				message <- "usage: sauce <image_url>";
+			} else {
+				sauce(args[1]);
 			}
 		default:
 			message <- "Unknown Command '" + args[0] + "'";
