@@ -19,6 +19,8 @@ import (
 var message = make(chan string);
 var sauce_key = "";
 
+var messages map[string]string;
+
 
 func GitioShort(_url string) (string) {
 	resp, err  := http.PostForm("http://git.io", url.Values{"url": {_url}});
@@ -152,6 +154,9 @@ func main() {
 	if err != nil {
 		fmt.Printf("[*] Configure error: %s\n", err.Error());
 	}
+
+	messages = make(map[string]string);
+
 	sauce_key = r.S("sauce_key").Data().(string);
 
 	irchndl, _ := r.S("irc").Children();
@@ -290,8 +295,8 @@ func sauce(imgurl string) {
 			if src != nil {
 				source = src.(string);
 			}
-			artists,_ := data.S("creator").Children();
-			artist = artists.Data().(string);
+			//artists,_ := data.S("creator").Children();
+			//artist = artists.Data().(string);
 		}
 
 		// if index_num == 5 {
@@ -339,6 +344,14 @@ func ParseCommand(conn *irc.Conn, nick, line string) {
 			} else {
 				sauce(args[1]);
 			}
+		case "notify": {
+			if len(args) < 3 {
+				message <- "usage: notify <nick> <message>";
+			} else {
+				messages[args[1]] = line[9+len(args[1]):];
+				message <- "I'll let " + args[1] + " know when I see them";
+			}
+		}
 		default:
 			// Too whack to handle
 		}
@@ -371,6 +384,13 @@ func IRCConnection(host, channel, nick string) {
 	cli.HandleFunc(irc.PRIVMSG, func(conn *irc.Conn, line *irc.Line) {
 		if line.Text()[0:1] == "^" {
 			ParseCommand(conn, line.Nick, line.Text());
+		}
+	});
+
+	cli.HandleFunc(irc.JOIN, func(conn *irc.Conn, line *irc.Line) {
+		if val, ok := messages[line.Nick]; ok {
+			message <- line.Nick + ", " + val;
+			delete(messages, line.Nick);
 		}
 	});
 
