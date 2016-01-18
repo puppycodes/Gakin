@@ -188,7 +188,7 @@ func Roll(count, sides string) (int) {
 }
 
 func hblookup(title string) {
-	resp, err := http.Get("http://hummingbird.me/api/v1/search/anime?query="+title);
+	resp, err := http.Get("http://hummingbird.me/api/v1/search/anime?query="+url.QueryEscape(title));
 	if err != nil {
 		message <- "Request Error";
 	}
@@ -326,11 +326,11 @@ func ParseCommand(conn *irc.Conn, nick, line string) {
 			}
 			message <- nick + ", " + strconv.Itoa(Roll(args[1], args[2]));
 		case "hb":
-			if len(args) != 3 {
+			if len(args) < 3 {
 				message <- "usage: hb <lookup|user> <title|username>";
 			}
 			if args[1] == "lookup" {
-				hblookup(args[2]);
+				hblookup(line[11:]);
 			} else if args[1] == "user" {
 				hbuser(args[2]);
 			} else {
