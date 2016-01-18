@@ -272,7 +272,7 @@ func sauce(imgurl string) {
 	cnt := 1;
 	for _, child := range results {
 		header := child.S("header");
-		data := child.S("header");
+		data := child.S("data");
 
 		sim := header.S("similarity").Data();
 		if sim == nil {
@@ -284,7 +284,7 @@ func sauce(imgurl string) {
 			index_name = "?";
 		}
 
-		// src_pxurl := "http://www.pixiv.net/member_illust.php?mode=medium\u0026illust_id=";
+		src_pxurl := "http://www.pixiv.net/member_illust.php?mode=medium\u0026illust_id=";
 
 		source := "";
 		artist := "?";
@@ -295,17 +295,15 @@ func sauce(imgurl string) {
 			if src != nil {
 				source = src.(string);
 			}
-			//artists,_ := data.S("creator").Children();
-			//artist = artists.Data().(string);
+			artists,_ := data.S("creator").Children();
+			artist = artists[0].Data().(string);
+		} else if index_num == 5 {
+			source = src_pxurl + data.S("pixiv_id").Data().(string);
+			title = data.S("title").Data().(string);
+			artist = data.S("member_name").Data().(string);
 		}
 
-		// if index_num == 5 {
-		// 	source = src_pxurl + strconv.FormatFloat(data.S("pixiv_id").(float64), 'f', 0, 64);
-		// 	title = data.S("title").Data().(string);
-		// 	artist = data.S("member_name").Data().(string);
-		// }
-
-		message <- "[" + sim.(string) + "% Match] Index: " + index_name.(string) + " Title: " + title + " Artists: " + artist + " Src:" + source;
+		message <- "[" + sim.(string) + "% Match] " + index_name.(string) + " Title: " + title + " Artist: " + artist + " Src: " + source;
 
 		if cnt == 2 {
 			break;
