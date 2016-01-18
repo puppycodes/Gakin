@@ -23,7 +23,7 @@ var messages map[string]string;
 
 
 func GitioShort(_url string) (string) {
-	resp, err  := http.PostForm("http://git.io", url.Values{"url": {_url}});
+	resp, err  := http.PostForm("https://git.io", url.Values{"url": {_url}});
 	if err != nil {
 		fmt.Printf("[*] GitioShort error: %s\n", err.Error());
 	}
